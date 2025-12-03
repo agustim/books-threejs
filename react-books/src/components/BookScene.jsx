@@ -18,14 +18,22 @@ class CreateBook {
         const lmo_cover = new THREE.BoxGeometry(0.05, 3, 0.59);
         const ppr_cover = new THREE.BoxGeometry(2.3, 2.8, 0.5);
 
-        const bookColor = 0xFFD700;
+        const textureLoader = new THREE.TextureLoader();
+        const bookCoverTexture = textureLoader.load('/somivem-una-illa-cover.jpg');
+        const bookLomoTexture = textureLoader.load('/somivem-una-illa-llom.jpg');
 
-        const mat = new THREE.MeshPhongMaterial({ color: bookColor });
+        //const bookColor = 0xffffff;
+        const bookBackColor = 0xFF8000;
+
+
+        const mat_cover = new THREE.MeshPhongMaterial({ map: bookCoverTexture });
+        const mat_lomo = new THREE.MeshPhongMaterial({ map: bookLomoTexture });
+        const mat_back = new THREE.MeshPhongMaterial({ color: bookBackColor });
         const mat_paper = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
 
-        const _cover1 = new THREE.Mesh(geo_cover, mat);
-        const _cover2 = new THREE.Mesh(geo_cover, mat);
-        const _lomo = new THREE.Mesh(lmo_cover, mat);
+        const _cover1 = new THREE.Mesh(geo_cover, mat_cover);
+        const _cover2 = new THREE.Mesh(geo_cover, mat_back);
+        const _lomo = new THREE.Mesh(lmo_cover, mat_lomo);
         const _paper = new THREE.Mesh(ppr_cover, mat_paper);
 
         [_cover1, _cover2, _lomo, _paper].forEach(mesh => {
