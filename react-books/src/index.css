@@ -3,7 +3,6 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #000;
   font-family: monospace;
   color: white;
 }
@@ -12,11 +11,11 @@ body {
   font-family: Bague, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: rgb(48, 68, 67);
-  /* background: #628f84;
-  background: #768ca8;
-  background: #d7dddd;
-  background: #e4eeef; */
+  /* background: rgb(48, 68, 67); */
+  /* background: #628f84; */
+  /* background: #768ca8; */
+  /* background: #d7dddd; */
+  background: #e4eeef;
 }
 
 body:after {
@@ -30,7 +29,8 @@ body:after {
   opacity: 0.4;
   z-index: 1000;
   animation: noise 1s steps(2) infinite;
-  pointer-events: none; /* Ensure clicks pass through */
+  pointer-events: none;
+  /* Ensure clicks pass through */
 }
 
 @keyframes noise {
