@@ -253,8 +253,12 @@ const BookScene = () => {
             // Move other books off-screen
             books.forEach((book) => {
                 if (book !== selectedBook) {
+                    // Books above (higher index, more negative Y) move up (more negative)
+                    // Books below (lower index, less negative Y) move down (more positive)
+                    const direction = book.index > selectedBook.index ? -10 : 10;
+
                     timeline.to(book.mesh.position, {
-                        z: book.index < selectedBook.index ? -10 : 10,
+                        y: book.initialPosition.y + direction,
                         duration: 1,
                         ease: "power2.inOut"
                     }, 0);
@@ -277,15 +281,18 @@ const BookScene = () => {
                 ease: "power2.inOut"
             }, 0);
 
+            // Rotate from spine view to angled view
             timeline.to(selectedBook.mesh.rotation, {
-                y: -Math.PI / 4,
-                z: Math.PI / 2,
+                x: -Math.PI / 4,
+                y: 0,
+                z: Math.PI,
                 duration: 0.8,
                 ease: "power2.inOut"
             }, 0);
 
             // Step 2: Rotate to show cover (flat)
             timeline.to(selectedBook.mesh.rotation, {
+                x: 0,
                 y: 0,
                 z: 0,
                 duration: 1,
@@ -340,14 +347,16 @@ const BookScene = () => {
                     ease: "power2.inOut"
                 }, 0);
 
-                // Reset opacity
-                if (book.mesh.material.opacity !== undefined) {
-                    timeline.to(book.mesh.material, {
-                        opacity: 1,
-                        duration: 0.8,
-                        ease: "power2.inOut"
-                    }, 0);
-                }
+                // Reset opacity for all materials
+                book.mesh.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        timeline.to(child.material, {
+                            opacity: 1,
+                            duration: 0.8,
+                            ease: "power2.inOut"
+                        }, 0);
+                    }
+                });
             });
         };
 
