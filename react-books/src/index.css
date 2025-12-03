@@ -2,12 +2,14 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
   font-family: monospace;
   color: white;
 }
 
 body {
+  height: 1500px;
+  /* Create scrollable height */
+  overflow-y: scroll;
   font-family: Bague, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -56,6 +56,7 @@ const BookScene = () => {
     const selectedBookRef = useRef(null);
     const isAnimatingRef = useRef(false);
     const hoveredBookRef = useRef(null);
+    const [scrollPosition, setScrollPosition] = useState(0);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -65,6 +66,10 @@ const BookScene = () => {
         // Variables
         let scene, camera, renderer, controls;
         const books = [];
+
+        // Book stack configuration
+        const numBooks = 12;
+        const stackSpacing = 1;
 
         // Create World
         const _width = window.innerWidth;
@@ -78,6 +83,11 @@ const BookScene = () => {
         camera = new THREE.PerspectiveCamera(35, _width / _height, 1, 1000);
         camera.position.set(0, 0, 12);
         cameraRef.current = camera;
+
+        // Calculate camera bounds based on book stack
+        // First book at y=0, rest going down (negative Y)
+        const minY = -(numBooks - 1) * stackSpacing - 2;
+        const maxY = 0;
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(_width, _height);
@@ -110,18 +120,15 @@ const BookScene = () => {
         const bookLomoTexture = textureLoader.load('/somivem-una-illa-llom.jpg');
 
         // Create stacked books
-        const numBooks = 12;
-        const stackSpacing = 1;
-
         for (let i = 0; i < numBooks; i++) {
             const book = new CreateBook({
                 cover: bookCoverTexture,
                 spine: bookLomoTexture
             });
 
-            // Position books in a horizontal stack (along z-axis)
+            // Position books starting from y=0 (first book at center) going down
             book.mesh.position.x = 0;
-            book.mesh.position.y = (i - (numBooks - 1) / 2) * stackSpacing;
+            book.mesh.position.y = -i * stackSpacing;
             book.mesh.position.z = 0;
 
             // Rotate to show spine (llom) facing camera
@@ -344,8 +351,26 @@ const BookScene = () => {
             });
         };
 
+        // Window scroll handler
+        const onScroll = () => {
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollPercent = scrollY / maxScroll;
+
+            // Map scroll percent to camera Y position
+            const newY = minY + (1 - scrollPercent) * (maxY - minY);
+
+            setScrollPosition(scrollPercent);
+
+            // Move both camera and target
+            camera.position.y = newY;
+            controls.target.y = newY;
+            controls.update();
+        };
+
         window.addEventListener('click', onMouseClick);
         window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('scroll', onScroll);
 
         // Window Resize
         const onWindowResize = () => {
@@ -375,6 +400,7 @@ const BookScene = () => {
             window.removeEventListener('resize', onWindowResize);
             window.removeEventListener('click', onMouseClick);
             window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('scroll', onScroll);
 
             if (animationIdRef.current) {
                 cancelAnimationFrame(animationIdRef.current);
@@ -402,7 +428,11 @@ const BookScene = () => {
         };
     }, []);
 
-    return <div ref={containerRef} style={{ width: '100%', height: '100vh', position: 'absolute', top: 0, left: 0, zIndex: 1 }} />;
+    return (
+        <>
+            <div ref={containerRef} style={{ width: '100%', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1, pointerEvents: 'none' }} />
+        </>
+    );
 };
 
 export default BookScene;
