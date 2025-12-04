@@ -11,19 +11,21 @@ const Theme = {
 };
 
 class CreateBook {
-    constructor(textures) {
+    constructor({ title, author, textures, resume }) {
         this.mesh = new THREE.Object3D();
+        this.title = title;
+        this.author = author;
+        this.resume = resume;
 
         const geo_cover = new THREE.BoxGeometry(2.4, 3, 0.05);
         const lmo_cover = new THREE.BoxGeometry(0.05, 3, 0.59);
         const ppr_cover = new THREE.BoxGeometry(2.3, 2.8, 0.5);
 
-        const bookBackColor = 0xFF8000;
 
-        const mat_cover = new THREE.MeshPhongMaterial({ map: textures.cover });
-        const mat_lomo = new THREE.MeshPhongMaterial({ map: textures.spine });
-        const mat_back = new THREE.MeshPhongMaterial({ color: bookBackColor });
-        const mat_paper = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
+        const mat_cover = new THREE.MeshPhongMaterial(textures.cover);
+        const mat_lomo = new THREE.MeshPhongMaterial(textures.spine);
+        const mat_back = new THREE.MeshPhongMaterial(textures.back);
+        const mat_paper = new THREE.MeshPhongMaterial(textures.paper);
 
         const _cover1 = new THREE.Mesh(geo_cover, mat_cover);
         const _cover2 = new THREE.Mesh(geo_cover, mat_back);
@@ -116,15 +118,30 @@ const BookScene = () => {
 
         // Load textures
         const textureLoader = new THREE.TextureLoader();
-        const bookCoverTexture = textureLoader.load('/somivem-una-illa-cover.jpg');
-        const bookLomoTexture = textureLoader.load('/somivem-una-illa-llom.jpg');
+        const bookCoverTexture = textureLoader.load('/somaivem-una-illa-cover.jpg');
+        const bookLomoTexture = textureLoader.load('/somaivem-una-illa-llom.jpg');
+
+        // Rotate the cover texture 180 degrees to fix spine orientation
+        bookCoverTexture.center.set(0.5, 0.5);
+        bookCoverTexture.rotation = Math.PI;
+        const bookBackColor = 0xFF8000;
+        const bookPaperColor = 0xFFFFFF;
+
+        const somiavemUnaIlla = {
+            title: "Somaivem una illa",
+            author: "Roc Casagran",
+            textures: {
+                cover: { map: bookCoverTexture },
+                spine: { map: bookLomoTexture },
+                back: { color: bookBackColor },
+                paper: { color: bookPaperColor }
+            },
+            resume: "Somiàvem una illa, la novel·la guanyadora del Premi Sant Jordi 2024, no és altra cosa que una carta que la Carla, una noia que voreja els quaranta i està en plena crisi existencial, escriu a l’Òscar, la seva parella. És una carta llarga, complexa, honesta i que constantment utilitza la història de vuit illes remotes per lligar tot allò que hi exposa."
+        };
 
         // Create stacked books
         for (let i = 0; i < numBooks; i++) {
-            const book = new CreateBook({
-                cover: bookCoverTexture,
-                spine: bookLomoTexture
-            });
+            const book = new CreateBook(somiavemUnaIlla);
 
             // Position books starting from y=0 (first book at center) going down
             book.mesh.position.x = 0;
@@ -282,19 +299,19 @@ const BookScene = () => {
             }, 0);
 
             // Rotate from spine view to angled view
-            timeline.to(selectedBook.mesh.rotation, {
-                x: -Math.PI / 4,
-                y: 0,
-                z: Math.PI,
-                duration: 0.8,
-                ease: "power2.inOut"
-            }, 0);
+            // timeline.to(selectedBook.mesh.rotation, {
+            //     x: -Math.PI / 4,
+            //     y: 0,
+            //     z: -Math.PI / 4,
+            //     duration: 0.8,
+            //     ease: "power2.inOut"
+            // }, 0);
 
             // Step 2: Rotate to show cover (flat)
             timeline.to(selectedBook.mesh.rotation, {
-                x: 0,
+                x: -0.3,
                 y: 0,
-                z: 0,
+                z: Math.PI,
                 duration: 1,
                 ease: "power2.inOut"
             }, 1);
