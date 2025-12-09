@@ -45,7 +45,7 @@ class CreateBook {
     }
 }
 
-const BookScene = () => {
+const BookScene = ({ onBookSelect }) => {
     const containerRef = useRef(null);
     const sceneRef = useRef(null);
     const cameraRef = useRef(null);
@@ -106,15 +106,19 @@ const BookScene = () => {
         controlsRef.current = controls;
 
         // Create Lights
-        const hemiLight = new THREE.HemisphereLight(Theme.primary, Theme.darker, 1);
-        const dirLight = new THREE.DirectionalLight(0xFFFFFF, 1.2);
+        const hemiLight = new THREE.HemisphereLight(Theme.primary, Theme.darker, 1.5);
+        const dirLight = new THREE.DirectionalLight(0xFFFFFF, 2);
         dirLight.position.set(5, 10, 10);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
 
+        // Add ambient light for overall brightness
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.8);
+
         scene.add(hemiLight);
         scene.add(dirLight);
+        scene.add(ambientLight);
 
         // Load textures
         const textureLoader = new THREE.TextureLoader();
@@ -261,6 +265,34 @@ const BookScene = () => {
             isAnimatingRef.current = true;
             selectedBookRef.current = selectedBook;
 
+            // Show book info via callback
+            if (onBookSelect) {
+                onBookSelect({
+                    title: selectedBook.title,
+                    author: selectedBook.author,
+                    resume: selectedBook.resume
+                });
+            }
+
+            // Move camera to the book's Y position
+            const bookY = selectedBook.initialPosition.y;
+
+            // Animate camera to book position
+            gsap.to(camera.position, {
+                y: bookY,
+                duration: 1,
+                ease: "power2.inOut"
+            });
+
+            gsap.to(controls.target, {
+                y: bookY,
+                duration: 1,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    controls.update();
+                }
+            });
+
             const timeline = gsap.timeline({
                 onComplete: () => {
                     isAnimatingRef.current = false;
@@ -280,11 +312,16 @@ const BookScene = () => {
                         ease: "power2.inOut"
                     }, 0);
 
-                    timeline.to(book.mesh.material, {
-                        opacity: 0,
-                        duration: 0.8,
-                        ease: "power2.inOut"
-                    }, 0);
+                    // Animate opacity for all child meshes
+                    book.mesh.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            timeline.to(child.material, {
+                                opacity: 0,
+                                duration: 0.8,
+                                ease: "power2.inOut"
+                            }, 0);
+                        }
+                    });
                 }
             });
 
@@ -299,13 +336,13 @@ const BookScene = () => {
             }, 0);
 
             // Rotate from spine view to angled view
-            // timeline.to(selectedBook.mesh.rotation, {
-            //     x: -Math.PI / 4,
-            //     y: 0,
-            //     z: -Math.PI / 4,
-            //     duration: 0.8,
-            //     ease: "power2.inOut"
-            // }, 0);
+            timeline.to(selectedBook.mesh.rotation, {
+                x: -Math.PI / 4,
+                y: 0,
+                z: -Math.PI / 4,
+                duration: 0.8,
+                ease: "power2.inOut"
+            }, 0);
 
             // Step 2: Rotate to show cover (flat)
             timeline.to(selectedBook.mesh.rotation, {
@@ -328,6 +365,11 @@ const BookScene = () => {
 
         const resetToStack = () => {
             isAnimatingRef.current = true;
+
+            // Hide book info via callback
+            if (onBookSelect) {
+                onBookSelect(null);
+            }
 
             const timeline = gsap.timeline({
                 onComplete: () => {
@@ -379,6 +421,9 @@ const BookScene = () => {
 
         // Window scroll handler
         const onScroll = () => {
+            // Don't update camera if a book is selected
+            if (selectedBookRef.current) return;
+
             const scrollY = window.scrollY;
             const maxScroll = document.body.scrollHeight - window.innerHeight;
             const scrollPercent = scrollY / maxScroll;
@@ -455,9 +500,7 @@ const BookScene = () => {
     }, []);
 
     return (
-        <>
-            <div ref={containerRef} style={{ width: '100%', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1, pointerEvents: 'none' }} />
-        </>
+        <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', pointerEvents: 'auto' }} />
     );
 };
 
