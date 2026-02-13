@@ -176,7 +176,10 @@ const BookScene = ({ onBookSelect }) => {
                 cover: '/somaivem-una-illa-cover.jpg',
                 spine: '/somaivem-una-illa-llom.jpg',
                 back: '#ff8000',
-                paper: '#FFFFFF'
+                paper: '#FFFFFF',
+                width: 3.5,
+                height: 4.8,
+                depth: 0.5
             }
         },
         {
