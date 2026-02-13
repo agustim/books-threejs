@@ -5,27 +5,73 @@ import gsap from 'gsap';
 
 const Theme = {
     primary: 0xd7dddd,
-    secundary: 0x0000FF,
+    secondary: 0x0000FF,
     danger: 0xFF0000,
     darker: 0x101010
 };
 
 class CreateBook {
-    constructor({ title, author, textures, resume }) {
+    constructor({ title, author, resume, options }) {
         this.mesh = new THREE.Object3D();
+        const textureLoader = new THREE.TextureLoader();
         this.title = title;
         this.author = author;
         this.resume = resume;
 
-        const geo_cover = new THREE.BoxGeometry(2.4, 3, 0.05);
-        const lmo_cover = new THREE.BoxGeometry(0.05, 3, 0.59);
-        const ppr_cover = new THREE.BoxGeometry(2.3, 2.8, 0.5);
+        const randomColor = () => {
+            const number = Math.floor(Math.random() * 16777215).toString(16);
+            if (number.length < 6) {
+                // Pad with leading zeros if necessary
+                return '#' + number.padStart(6, '0');
+            }
+            return '#' + number;
+        };
+        const randomTapaType = Math.random() < 0.5 ? 'tapa-dura' : 'tapa-tova';
+
+        const randomMides = { width: Math.random() * 1 + 1.5, height: Math.random() * 1 + 2.5, depth: Math.random() * 0.5 + 0.3 };
+
+        const mides_llibre = { ...randomMides, type: randomTapaType, 
+            cover: randomColor(), 
+            spine: randomColor(), 
+            back: randomColor(), 
+            paper: '#FFFFFF',
+         ...options };
 
 
-        const mat_cover = new THREE.MeshPhongMaterial(textures.cover);
-        const mat_lomo = new THREE.MeshPhongMaterial(textures.spine);
-        const mat_back = new THREE.MeshPhongMaterial(textures.back);
-        const mat_paper = new THREE.MeshPhongMaterial(textures.paper);
+        // Si comença amb # és un color, sinó és una textura
+        const coverTexture = (mides_llibre.cover.startsWith('#')) ? { color: mides_llibre.cover } : { map: textureLoader.load(mides_llibre.cover) };
+        const spineTexture = (mides_llibre.spine.startsWith('#')) ? { color: mides_llibre.spine } : { map: textureLoader.load(mides_llibre.spine) };
+        const backTexture = (mides_llibre.back.startsWith('#')) ? { color: mides_llibre.back } : { map: textureLoader.load(mides_llibre.back) };
+        const paperTexture = (mides_llibre.paper.startsWith('#')) ? { color: mides_llibre.paper } : { map: textureLoader.load(mides_llibre.paper) };
+
+        // Arreglem la portada perquè es vegi bé.
+        if (mides_llibre.cover && !mides_llibre.cover.startsWith('#')) {
+            coverTexture.map.center.set(0.5, 0.5);
+            coverTexture.map.rotation = Math.PI;
+        }
+
+        let geo_cover_data, geo_lomo_data, geo_paper_data;
+
+        if (mides_llibre.type === 'tapa-dura') {
+            geo_cover_data = {width: mides_llibre.width, height: mides_llibre.height, depth: 0.05};
+            geo_lomo_data = {width: 0.05, height: mides_llibre.height, depth: mides_llibre.depth - 0.01};
+            geo_paper_data = {width: mides_llibre.width - 0.1, height: mides_llibre.height - 0.2, depth: mides_llibre.depth - 0.1};
+        }
+        if (mides_llibre.type === 'tapa-tova') {
+            geo_cover_data = {width: mides_llibre.width, height: mides_llibre.height, depth: 0.02};
+            geo_lomo_data = {width: 0.02, height: mides_llibre.height, depth: mides_llibre.depth - 0.01};
+            geo_paper_data = {width: mides_llibre.width, height: mides_llibre.height, depth: mides_llibre.depth - 0.04};
+        }
+
+        const geo_cover = new THREE.BoxGeometry(geo_cover_data.width, geo_cover_data.height, geo_cover_data.depth);
+        const lmo_cover = new THREE.BoxGeometry(geo_lomo_data.width, geo_lomo_data.height, geo_lomo_data.depth);
+        const ppr_cover = new THREE.BoxGeometry(geo_paper_data.width, geo_paper_data.height, geo_paper_data.depth);
+
+
+        const mat_cover = new THREE.MeshPhongMaterial(coverTexture);
+        const mat_lomo = new THREE.MeshPhongMaterial(spineTexture);
+        const mat_back = new THREE.MeshPhongMaterial(backTexture);
+        const mat_paper = new THREE.MeshPhongMaterial(paperTexture);
 
         const _cover1 = new THREE.Mesh(geo_cover, mat_cover);
         const _cover2 = new THREE.Mesh(geo_cover, mat_back);
@@ -37,9 +83,9 @@ class CreateBook {
             mesh.receiveShadow = true;
         });
 
-        _cover1.position.z = 0.3;
-        _cover2.position.z = -0.3;
-        _lomo.position.x = 2.4 / 2;
+        _cover1.position.z = mides_llibre.depth / 2;
+        _cover2.position.z = -mides_llibre.depth / 2;
+        _lomo.position.x = mides_llibre.width / 2;
 
         this.mesh.add(_cover1, _cover2, _lomo, _paper);
     }
@@ -120,33 +166,43 @@ const BookScene = ({ onBookSelect }) => {
         scene.add(dirLight);
         scene.add(ambientLight);
 
-        // Load textures
-        const textureLoader = new THREE.TextureLoader();
-        const bookCoverTexture = textureLoader.load('/somaivem-una-illa-cover.jpg');
-        const bookLomoTexture = textureLoader.load('/somaivem-una-illa-llom.jpg');
-
-        // Rotate the cover texture 180 degrees to fix spine orientation
-        bookCoverTexture.center.set(0.5, 0.5);
-        bookCoverTexture.rotation = Math.PI;
-        const bookBackColor = 0xFF8000;
-        const bookPaperColor = 0xFFFFFF;
-
-        const somiavemUnaIlla = {
+        const booksDefine = [
+        {
             title: "Somaivem una illa",
             author: "Roc Casagran",
-            textures: {
-                cover: { map: bookCoverTexture },
-                spine: { map: bookLomoTexture },
-                back: { color: bookBackColor },
-                paper: { color: bookPaperColor }
-            },
-            resume: "Somiàvem una illa, la novel·la guanyadora del Premi Sant Jordi 2024, no és altra cosa que una carta que la Carla, una noia que voreja els quaranta i està en plena crisi existencial, escriu a l’Òscar, la seva parella. És una carta llarga, complexa, honesta i que constantment utilitza la història de vuit illes remotes per lligar tot allò que hi exposa."
-        };
+            resume: "Somiàvem una illa, la novel·la guanyadora del Premi Sant Jordi 2024, no és altra cosa que una carta que la Carla, una noia que voreja els quaranta i està en plena crisi existencial, escriu a l’Òscar, la seva parella. És una carta llarga, complexa, honesta i que constantment utilitza la història de vuit illes remotes per lligar tot allò que hi exposa.",
+            options: {
+                type: 'tapa-dura',
+                cover: '/somaivem-una-illa-cover.jpg',
+                spine: '/somaivem-una-illa-llom.jpg',
+                back: '#ff8000',
+                paper: '#FFFFFF'
+            }
+        },
+        {
+            title: "El dia que vaig deixar de pensar en tu",
+            author: "Albert Forns",
+            resume: "El dia que vaig deixar de pensar en tu, la novel·la guanyadora del Premi Llibreter 2024, és un relat que es mou entre el present i el passat, entre la Barcelona actual i la ciutat dels anys vuitanta. El protagonista, en Martí, és un jove que viu a Barcelona i que es veu immers en una crisi personal després de la mort del seu pare. A través de les seves reflexions i records, el llibre explora temes com la memòria, la identitat i les relacions familiars.",
+            options: {
+                type: 'tapa-tova',
+                cover: '#ff8000',
+                spine: '#0080ff',
+                back: '#0080ff',
+                paper: '#FFFFFF'
+            }
+        }];  
 
+        // mentre numBooks < books.length, omplim amb llibres ficticis
+        while (booksDefine.length < numBooks) {
+            booksDefine.push({
+                title: `Book ${booksDefine.length + 1}`,
+            });
+        }
+
+        console.log('Books created:', books);
         // Create stacked books
         for (let i = 0; i < numBooks; i++) {
-            const book = new CreateBook(somiavemUnaIlla);
-
+            const book = new CreateBook(booksDefine[i]);
             // Position books starting from y=0 (first book at center) going down
             book.mesh.position.x = 0;
             book.mesh.position.y = -i * stackSpacing;
@@ -180,7 +236,7 @@ const BookScene = ({ onBookSelect }) => {
             raycasterRef.current.setFromCamera(mouseRef.current, camera);
 
             // Calculate objects intersecting the picking ray
-            const allMeshes = books.map(b => b.mesh);
+            const allMeshes = books.map(b => b.mesh).filter(mesh => mesh !== undefined && mesh !== null);
             const intersects = raycasterRef.current.intersectObjects(allMeshes, true);
 
             if (intersects.length > 0) {
@@ -236,7 +292,7 @@ const BookScene = ({ onBookSelect }) => {
             raycasterRef.current.setFromCamera(mouseRef.current, camera);
 
             // Calculate objects intersecting the picking ray
-            const allMeshes = books.map(b => b.mesh);
+            const allMeshes = books.map(b => b.mesh).filter(mesh => mesh !== undefined && mesh !== null);
             const intersects = raycasterRef.current.intersectObjects(allMeshes, true);
 
             if (intersects.length > 0) {
@@ -276,6 +332,7 @@ const BookScene = ({ onBookSelect }) => {
 
             // Move camera to the book's Y position
             const bookY = selectedBook.initialPosition.y;
+            console.log('Animating camera to Y:', bookY);
 
             // Animate camera to book position
             gsap.to(camera.position, {
@@ -329,7 +386,7 @@ const BookScene = ({ onBookSelect }) => {
             // Step 1: Move to center and rotate to side view
             timeline.to(selectedBook.mesh.position, {
                 x: 0,
-                y: 0,
+                y: bookY,
                 z: 0,
                 duration: 1,
                 ease: "power2.inOut"
@@ -500,7 +557,7 @@ const BookScene = ({ onBookSelect }) => {
     }, []);
 
     return (
-        <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', pointerEvents: 'auto' }} />
+        <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'fixed', pointerEvents: 'auto' }} />
     );
 };
 
